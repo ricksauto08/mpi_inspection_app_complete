@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vehicle Inspection Report</title>
+  <style>
+    body { margin: 0; padding: 0; background: #fff; }
+    .paper { width: 8.5in; margin: 0 auto; padding: 8px; font-size: 11px; color: #000; }
+    h1.title { text-align: center; font-size: 2em; font-weight: bold; margin: 0; }
+
+    .button-bar { text-align: right; margin: 8px 0; }
+    .button-bar button { padding: 4px 8px; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; }
+    #btnGreen { background: #22c55e; color: #fff; }
+    #btnClear { background: #ef4444; color: #fff; }
+    #btnPrint { background: #e5e7eb; }
+
+    @media print {
+      .no-print { display: none; }
+      .tick-green, .tick-yellow, .tick-red, .section-title {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+
+    .header-grid input { border: none; border-bottom: 1px solid #000; outline: none; }
+    .header-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; margin-bottom: 8px; }
+    .span-4 { grid-column: span 4; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+    .legend-row { display: flex; align-items: center; gap: 24px; border-bottom: 1px solid #e5e7eb; padding: 4px 0 8px 0; margin-bottom: 8px; }
+    .legend-row .legend-item { display: flex; align-items: center; font-size: 11px; }
+    .legend-row .legend-item .tickbox { margin-right: 4px; }
+    .two-col { display: flex; gap: 16px; }
+    .section-group { border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; flex: 1; display: flex; flex-direction: column; }
+    .section-title { background: #111827; color: #fff; font-weight: bold; padding: 4px 8px; font-size: 0.8rem; }
+    .item-row { display: grid; grid-template-columns: 56px auto; align-items: start; border-top: 1px solid #e5e7eb; padding: 4px 8px; }
+    .dot-group { display: inline-flex; gap: 4px; }
+    .tickbox { width: 16px; height: 16px; border-radius: 3px; font-weight: bold; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #000; }
+    .tick-green { background: #22c55e; }
+    .tick-yellow { background: #facc15; }
+    .tick-red { background: #ef4444; }
+    .tickbox:hover { filter: brightness(0.9); }
+    .battery-section, .brake-section { padding: 8px; }
+    .check-item { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+    .check-item + .check-item { margin-top: 8px; }
+    .wheel-row { display: flex; gap: 8px; }
+    .wheel-row + .wheel-row { margin-top: 8px; }
+    .wheel-card { border: 1px solid #e5e7eb; border-radius: 4px; padding: 4px; flex: 1; font-size: 11px; }
+    .wheel-name { font-weight: bold; margin-bottom: 4px; }
+    .wheel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; align-items: start; }
+    .wheel-grid label { display: block; font-size: 11px; }
+    .wheel-grid .small-label { font-size: 11px; }
+    .psi-row label { margin-right: 16px; font-size: 11px; }
+    #alignment-group { margin-top: 12px; }
+    .small-check { display: flex; justify-content: space-between; align-items: center; border: 1px solid #e5e7eb; padding: 6px 8px; font-size: 11px; }
+    .small-check + .small-check { margin-top: 8px; }
+    .comment-box { border-top: 1px solid #e5e7eb; padding: 8px; }
+    textarea#comments { width: 100%; height: 120px; border: 1px solid #e5e7eb; border-radius: 4px; padding: 4px; font-family: sans-serif; font-size: 11px; resize: none; }
+
+    /* Responsive layout adjustments for mobile screens */
+    @media screen and (max-width: 767px) {
+      .paper {
+        width: 100%;
+        margin: 0;
+        padding: 8px;
+        font-size: 14px;
+      }
+      .header-grid {
+        grid-template-columns: 1fr;
+      }
+      .span-4, .span-8, .span-12 {
+        grid-column: span 1 !important;
+      }
+      .two-col {
+        flex-direction: column;
+      }
+      .section-group {
+        width: 100%;
+        flex: 0 0 auto;
+      }
+      .wheel-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .wheel-card {
+        width: 100%;
+      }
+      .wheel-grid {
+        grid-template-columns: 1fr;
+      }
+      .check-item, .small-check {
+        font-size: 13px;
+        align-items: flex-start;
+      }
+      .check-item {
+        flex-direction: column;
+      }
+      .tickbox {
+        width: 24px;
+        height: 24px;
+        font-size: 16px;
+      }
+      input, select, textarea {
+        font-size: 14px;
+      }
+      .button-bar button {
+        font-size: 13px;
+        padding: 6px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="paper">
+    <h1 class="title">VISUAL VEHICLE INSPECTION REPORT</h1>
+
+    <div class="button-bar no-print">
+      <button id="btnGreen">Mark All Green</button>
+      <button id="btnClear">Clear All</button>
+      <button id="btnPrint">Print</button>
+    </div>
+
+    <div class="header-grid">
+      <div class="span-8">
+        <label>Penn Toyota: <input type="text"></label>
+      </div>
+      <div class="span-4">
+        <label>Date: <input type="text"></label>
+      </div>
+      <div class="span-8">
+        <label>Customer Name: <input type="text"></label>
+      </div>
+      <div class="span-4">
+        <label>Technician: <input type="text"></label>
+      </div>
+      <div class="span-4">
+        <label>Yr./Make/Model: <input type="text"></label>
+      </div>
+      <div class="span-4">
+        <label>Lic/Tag#: <input type="text"></label>
+      </div>
+      <div class="span-4">
+        <label>Mileage: <input type="text"></label>
+      </div>
+      <div class="span-8">
+        <label>VIN: <input type="text"></label>
+      </div>
+      <div class="span-4">
+        <label>Repair Order#: <input type="text"></label>
+      </div>
+    </div>
+
+    <div class="legend-row">
+      <div class="legend-item">
+        <div class="tickbox tick-green"></div><span>Checked &amp; Okay</span>
+      </div>
+      <div class="legend-item">
+        <div class="tickbox tick-yellow"></div><span>May Need Future Attention</span>
+      </div>
+      <div class="legend-item">
+        <div class="tickbox tick-red"></div><span>Requires Immediate Attention</span>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- Left Column Sections -->
+      <div class="section-group">
+        <div class="section-title">INTERIOR/EXTERIOR</div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Head Lights / Tail Lights / Turn Signals / Brake Lights / Hazard Warning Lights / Exterior Lamps / License Plate Lights</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Windshield Washer Spray / Wiper Operation / Wiper Blades</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Windshield Condition (Inspect for Cracks, Chips, or Pitting)</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Mirrors / Glass</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Emergency Brake Adjustment</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Horn Operation</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Fuel Tank Cap Gasket</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Air Conditioning Filter (if equipped)</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Clutch Operation (if equipped)</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Back-up Lights Left / Right</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Dash Warning Lights</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Carpet / Upholstery / Floor Mats</div>
+        </div>
+
+        <div class="section-title">UNDER VEHICLE</div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Shock Absorbers / Suspension / Struts</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Steering Gear Box / Linkage and Boots / Ball Joints / Dust Covers</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Muffler / Exhaust Pipes / Mountings / Catalytic Converter</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Engine Oil and/or Fluid Leaks</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Brake Lines / Hoses / Parking Brake Cable</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Drive Shaft Boots / Constant Velocity Boots / U-joints / Transmission (if equipped)</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Transmission / Differential / Transfer Case (Check Fluid Level, Fluid Condition and Fluid Leaks)</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Fuel Lines and Connections / Fuel Tank Band / Fuel Tank Vapor Vent System Hoses</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Inspect Nuts and Bolts on Body Chassis</div>
+        </div>
+
+        <div class="section-title">UNDER HOOD</div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Fluid Levels: Oil / Coolant / Battery / Power Steering / Brake Fluid / Washer / Automatic Transmission</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Engine Air Filter</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Drive Belts (condition and adjustment)</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Cooling System Hoses / Heater Hoses / Air Conditioning Hoses and Connections</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Radiator Core / Air Conditioning Condenser (if equipped)</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Coolant Recovery Reservoir Fluid Level / Condition</div>
+        </div>
+        <div class="item-row">
+          <div class="dot-group">
+            <div class="tickbox tick-green"></div>
+            <div class="tickbox tick-yellow"></div>
+            <div class="tickbox tick-red"></div>
+          </div>
+          <div>Clutch Reservoir Fluid / Condition (as equipped)</div>
+        </div>
+      </div>
+
+      <!-- Right Column Sections -->
+      <div class="section-group">
+        <div class="section-title">BATTERY</div>
+        <div class="battery-section">
+          <div class="check-item">
+            <span>Battery Terminals / Cables / Mountings</span>
+            <div class="dot-group">
+              <div class="tickbox tick-green"></div>
+              <div class="tickbox tick-yellow"></div>
+              <div class="tickbox tick-red"></div>
+            </div>
+          </div>
+          <div class="check-item">
+            <span>Check Condition of Battery (Storage Capacity Test)</span>
+            <div class="dot-group">
+              <div class="tickbox tick-green"></div>
+              <div class="tickbox tick-yellow"></div>
+              <div class="tickbox tick-red"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">BRAKE AND TIRE</div>
+        <div class="brake-section">
+          <div class="wheel-row">
+            <div class="wheel-card">
+              <div class="wheel-name">Left Front</div>
+              <div class="wheel-grid">
+                <div>
+                  <label>Brake Lining (mm) 
+                    <select>
+                      <option value=""></option>
+                      <option>12</option><option>11</option><option>10</option><option>9</option>
+                      <option>8</option><option>7</option><option>6</option><option>5</option>
+                      <option>4</option><option>3</option><option>2</option><option>1</option>
+                    </select>
+                  </label>
+                  <label>Tire Tread (32nds) 
+                    <select>
+                      <option value=""></option>
+                      <option>12</option><option>11</option><option>10</option><option>9</option>
+                      <option>8</option><option>7</option><option>6</option><option>5</option>
+                      <option>4</option><option>3</option><option>2</option><option>1</option>
+                    </select>
+                  </label>
+                </div>
+                <div>
+                  <div class="small-label">Brake Condition</div>
+                  <div class="dot-group">
+                    <div class="tickbox tick-green"></div>
+                    <div class="tickbox tick-yellow"></div>
+                    <div class="tickbox tick-red"></div>
+                  </div>
+                  <div class="small-label">Wear Pattern</div>
+                  <div class="dot-group">
+                    <div class="tickbox tick-green"></div>
+                    <div class="tickbox tick-yellow"></div>
+                    <div class="tickbox tick-red"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="psi-row">
+                <label>PSI Before <input type="text" size="4"></label>
+                <label>After <input type="text" size="4"></label>
+              </div>
+            </div>
+            <div class="wheel-card">
+              <div class="wheel-name">Right Front</div>
+              <div class="wheel-grid">
+                <div>
+                  <label>Brake Lining (mm) 
+                    <select>
+                      <option value=""></option>
+                      <option>12</option><option>11</option><option>10</option><option>9</option>
+                      <option>8</option><option>7</option><option>6</option><option>5</option>
+                      <option>4</option><option>3</option><option>2</option><option>1</option>
+                    </select>
+                  </label>
+                  <label>Tire Tread (32nds) 
+                    <select>
+                      <option value=""></option>
+                      <option>12</option><option>11</option><option>10</option><option>9</option>
+                      <option>8</option><option>7</option><option>6</option><option>5</option>
+                      <option>4</option><option>3</option><option>2</option><option>1</option>
+                    </select>
+                  </label>
+                </div>
+                <div>
+                  <div class="small-label">Brake Condition</div>
+                  <div class="dot-group">
+                    <div class="tickbox tick-green"></div>
+                    <div class="tickbox tick-yellow"></div>
+                    <div class="tickbox tick-red"></div>
+                  </div>
+                  <div class="small-label">Wear Pattern</div>
+                  <div class="dot-group">
+                    <div class="tickbox tick-green"></div>
+                    <div class="tickbox tick-yellow"></div>
+                    <div class="tickbox tick-red"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="psi-row">
+                <label>PSI Before <input type="text" size="4"></label>
+                <label>After <input type="text" size="4"></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="wheel-row">
+            <div class="wheel-card">
+              <div class="wheel-name">Left Rear</div>
+              <div class="wheel-grid">
+                <div>
+                  <label>Brake Lining (mm) 
+                    <select>
+                      <option value=""></option>
+                      <option>12</option><option>11</option><option>10</option><option>9</option>
+                      <option>8</option><option>7</option><option>6</option><option>5</option>
+                      <option>4</option><option>3</option><option>2</option><option>1</option>
+                    </select>
+                  </label>
+                  <label>Tire Tread (32nds) 
+                    <select>
+                      <option value=""></option>
+                      <option>12</option><option>11</option><option>10</option><option>9</option>
+                      <option>8</option><option>7</option><option>6</option><option>5</option>
+                      <option>4</option><option>3</option><option>2</option><option>1</option>
+                    </select>
+                  </label>
+                </div>
+                <div>
+                  <div class="small-label">Brake Condition</div>
+                  <div class="dot-group">
+                    <div class="tickbox tick-green"></div>
+                    <div class="tickbox tick-yellow"></div>
+                    <div class="tickbox tick-red"></div>
+                  </div>
+                  <div class="small-label">Wear Pattern</div>
+                  <div class="dot-group">
+                    <div class="tickbox tick-green"></div>
+                    <div class="tickbox tick-yellow"></div>
+                    <div class="tickbox tick-red"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="psi-row">
+                <label>PSI Before <input type="text" size="4"></label>
+                <label>After <input type="text" size="4"></label>
+              </div>
+            </div>
+            <div class="wheel-card">
+              <div class="wheel-name">Right Rear</div>
+              <div class="wheel-grid">
+                <div>
+                  <label>Brake Lining (mm) 
+                    <select>
+                      <option value=""></option>
+                      <option>12</option><option>11</option><option>10</option><option>9</option>
+                      <option>8</option><option>7</option><option>6</option><option>5</option>
+                      <option>4</option><option>3</option><option>2</option><option>1</option>
+                    </select>
+                  </label>
+                  <label>Tire Tread (32nds) 
+                    <select>
+                      <option value=""></option>
+                      <option>12</option><option>11</option><option>10</option><option>9</option>
+                      <option>8</option><option>7</option><option>6</option><option>5</option>
+                      <option>4</option><option>3</option><option>2</option><option>1</option>
+                    </select>
+                  </label>
+                </div>
+                <div>
+                  <div class="small-label">Brake Condition</div>
+                  <div class="dot-group">
+                    <div class="tickbox tick-green"></div>
+                    <div class="tickbox tick-yellow"></div>
+                    <div class="tickbox tick-red"></div>
+                  </div>
+                  <div class="small-label">Wear Pattern</div>
+                  <div class="dot-group">
+                    <div class="tickbox tick-green"></div>
+                    <div class="tickbox tick-yellow"></div>
+                    <div class="tickbox tick-red"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="psi-row">
+                <label>PSI Before <input type="text" size="4"></label>
+                <label>After <input type="text" size="4"></label>
+              </div>
+            </div>
+          </div>
+
+          <div id="alignment-group">
+            <div class="small-check">
+              <div>Alignment Check Needed</div>
+              <div class="dot-group">
+                <div class="tickbox tick-green"></div>
+                <div class="tickbox tick-yellow"></div>
+                <div class="tickbox tick-red"></div>
+              </div>
+            </div>
+            <div class="small-check">
+              <div>Wheel Balance Needed</div>
+              <div class="dot-group">
+                <div class="tickbox tick-green"></div>
+                <div class="tickbox tick-yellow"></div>
+                <div class="tickbox tick-red"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top: 12px;">TECHNICIAN COMMENTS / NOTES</div>
+        <div class="comment-box">
+          <textarea id="comments" placeholder="Notes, comments, recommendations..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.dot-group .tickbox').forEach(function(box) {
+      box.addEventListener('click', function() {
+        if (this.innerText === 'X') {
+          this.innerText = '';
+        } else {
+          // clear siblings
+          var parent = this.parentNode;
+          parent.querySelectorAll('.tickbox').forEach(function(sib) {
+            sib.innerText = '';
+          });
+          this.innerText = 'X';
+        }
+      });
+    });
+    document.getElementById('btnGreen').addEventListener('click', function() {
+      document.querySelectorAll('.dot-group').forEach(function(group) {
+        var boxes = group.querySelectorAll('.tickbox');
+        var hasSelected = false;
+        boxes.forEach(function(box) {
+          if (box.innerText === 'X') { hasSelected = true; }
+        });
+        if (!hasSelected && boxes.length > 0) {
+          boxes[0].innerText = 'X';
+        }
+      });
+    });
+    document.getElementById('btnClear').addEventListener('click', function() {
+      document.querySelectorAll('.tickbox').forEach(function(box) {
+        box.innerText = '';
+      });
+    });
+    document.getElementById('btnPrint').addEventListener('click', function() {
+      window.print();
+    });
+  </script>
+</body>
+</html>
