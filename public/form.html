@@ -1,0 +1,34 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vehicle MPI Form</title>
+</head>
+<body>
+  <h1>Submit Vehicle MPI</h1>
+  <form id="mpiForm">
+    <label>Repair Order #: <input type="text" name="roNumber" required></label><br>
+    <label>Technician: <input type="text" name="technician" required></label><br>
+    <label>Comments: <textarea name="comments"></textarea></label><br>
+    <button type="submit">Submit</button>
+  </form>
+  <script>
+    document.getElementById('mpiForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        roNumber: form.roNumber.value,
+        technician: form.technician.value,
+        comments: form.comments.value
+      };
+      await fetch('/api/submit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      alert('Submitted!');
+      form.reset();
+    });
+  </script>
+</body>
+</html>
